@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Capacitación en Seguridad Industrial - AR</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: transparent;
+        }
+        #input_video { display: none; }
+        #output_canvas {
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+        
+        .menu {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            padding: 20px;
+        }
+        .menu.hidden { display: none; }
+        .menu h1 {
+            font-size: 42px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #FFA500;
+        }
+        .menu p {
+            font-size: 22px;
+            margin-bottom: 40px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            max-width: 1000px;
+            width: 90%;
+        }
+        .category-btn {
+            background: linear-gradient(145deg, #2d2d44, #1a1a2e);
+            color: #FFA500;
+            border: 2px solid #FFA500;
+            border-radius: 10px;
+            padding: 35px 25px;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .category-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255,165,0,0.3);
+            background: linear-gradient(145deg, #3d3d54, #2a2a3e);
+            border-color: #FFB533;
+        }
+        .category-btn:active {
+            transform: translateY(-2px);
+        }
+        .category-icon {
+            font-size: 42px;
+            display: block;
+            margin-bottom: 12px;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 35px;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+            border: 2px solid #FFA500;
+        }
+        .loading.show { display: block; }
+        .loading strong {
+            display: block;
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #FFA500;
+        }
+        .spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #FFA500;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .victory {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 20;
+            background: linear-gradient(145deg, #1a1a2e, #0f3460);
+            border: 3px solid #4CAF50;
+            padding: 45px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.7);
+            animation: celebrate 0.5s ease-out forwards;
+            display: none;
+        }
+        .victory.show { display: block; }
+        @keyframes celebrate {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-180deg); }
+            50% { transform: translate(-50%, -50%) scale(1.05) rotate(5deg); }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+        }
+        .victory h1 {
+            font-size: 44px;
+            margin-bottom: 20px;
+            color: #4CAF50;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+            font-weight: 700;
+        }
+        .victory p {
+            font-size: 22px;
+            margin: 15px 0;
+            color: #fff;
+            font-weight: 300;
+        }
+        .victory button {
+            margin: 15px 10px;
+            padding: 15px 35px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .victory button:hover {
+            background: #5CBF60;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(76,175,80,0.4);
+        }
+        .victory button:active {
+            transform: scale(0.98);
+        }
+        .victory button.menu-btn {
+            background: #FFA500;
+        }
+        .victory button.menu-btn:hover {
+            background: #FFB533;
+            box-shadow: 0 7px 20px rgba(255,165,0,0.4);
+        }
+        .badge {
+            font-size: 70px;
+            margin: 20px 0;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 15;
+            background: rgba(255, 165, 0, 0.95);
+            color: #1a1a2e;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 28px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            display: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .back-btn.show { display: block; }
+        .back-btn:hover {
+            background: rgba(255, 181, 51, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,165,0,0.5);
+        }
+        .back-btn:active {
+            transform: scale(0.98);
+        }
+        
+        @media (max-width: 768px) {
+            .menu h1 { font-size: 28px; }
+            .menu p { font-size: 18px; margin-bottom: 30px; }
+            .category-grid {
+                grid-template-columns: 1fr;
+                gap: 18px;
+                padding: 0 15px;
+            }
+            .category-btn { font-size: 17px; padding: 28px 20px; }
+            .category-icon { font-size: 38px; margin-bottom: 8px; }
+            .victory { padding: 35px 25px; max-width: 90%; }
+            .victory h1 { font-size: 32px; }
+            .victory p { font-size: 19px; }
+            .victory button { font-size: 16px; padding: 12px 28px; }
+            .badge { font-size: 58px; }
+            .back-btn { 
+                top: 10px; 
+                right: 10px; 
+                padding: 10px 22px; 
+                font-size: 15px; 
+            }
+        }
+    </style>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+    <div class="container">
+        <div id="menuScreen" class="menu">
+            <h1>⚠️ SISTEMA DE CAPACITACIÓN EN SEGURIDAD INDUSTRIAL</h1>
+            <p>Seleccione un módulo de entrenamiento:</p>
+            <div class="category-grid">
+                <button class="category-btn" onclick="startGame('basics')">
+                    <span class="category-icon">🛡️</span>
+                    Conceptos Básicos
+                </button>
+                <button class="category-btn" onclick="startGame('risk')">
+                    <span class="category-icon">⚠️</span>
+                    Prevención
+                </button>
+                <button class="category-btn" onclick="startGame('ppe')">
+                    <span class="category-icon">🦺</span>
+                    EPP - Equipos
+                </button>
+            </div>
+        </div>
+        
+        <button id="backBtn" class="back-btn" onclick="backToMenu()">← Menú Principal</button>
+        
+        <div id="loadingMsg" class="loading">
+            <strong>⚙️ Iniciando Sistema...</strong>
+            <div class="spinner"></div>
+            <div>Activando cámara de detección...</div>
+        </div>
+        
+        <div id="victoryScreen" class="victory">
+            <div class="badge">✅</div>
+            <h1>🎯 MÓDULO COMPLETADO</h1>
+            <p>Ha respondido correctamente todas las preguntas</p>
+            <p>Capacitación exitosa 🏆</p>
+            <button onclick="resetGame()">🔄 Repetir Módulo</button>
+            <button class="menu-btn" onclick="backToMenu()">📋 Menú Principal</button>
+        </div>
+        
+        <video id="input_video" playsinline></video>
+        <canvas id="output_canvas"></canvas>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const loadingMsg = document.getElementById('loadingMsg');
+        const victoryScreen = document.getElementById('victoryScreen');
+        const menuScreen = document.getElementById('menuScreen');
+        const backBtn = document.getElementById('backBtn');
+
+        function resizeCanvas() {
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
+
+        const categories = {
+            basics: [
+                { question: '¿Qué es un peligro?', answer: 'Algo que puede causar daño', color: '#C0392B' },
+                { question: '¿Qué es un riesgo?', answer: 'Probabilidad de que el peligro cause daño', color: '#D35400' },
+                { question: '¿Qué se necesita para que exista un riesgo?', answer: 'Peligro + exposición', color: '#E67E22' },
+                { question: '¿Ejemplo de peligro?', answer: 'Piso mojado', color: '#CA6F1E' }
+            ],
+            risk: [
+                { question: '¿Qué es prevención?', answer: 'Evitar que ocurran accidentes', color: '#1F618D' },
+                { question: '¿Qué es un incidente?', answer: 'Evento sin lesiones', color: '#21618C' },
+                { question: '¿Qué es un accidente?', answer: 'Evento con lesiones o daños', color: '#117A65' },
+                { question: '¿Qué es seguridad?', answer: 'Condición libre de peligro', color: '#0E6655' }
+            ],
+            ppe: [
+                { question: '¿Qué protege el casco?', answer: 'La cabeza', color: '#6C3483' },
+                { question: '¿Para qué sirven las gafas?', answer: 'Proteger los ojos', color: '#7D3C98' },
+                { question: '¿Qué protege el chaleco?', answer: 'Visibilidad del trabajador', color: '#186A3B' },
+                { question: '¿Para qué sirven los guantes?', answer: 'Proteger las manos', color: '#1E8449' }
+            ]
+        };
+
+        let currentCategory = null;
+        let questions = [];
+        let completedCount = 0;
+        let gameWon = false;
+        let gameStarted = false;
+        let audioInitialized = false;
+
+        function calculateDistance(x1, y1, x2, y2) {
+            return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+        }
+
+        function initializeAudio() {
+            if (!audioInitialized && 'speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance('');
+                utterance.volume = 0;
+                window.speechSynthesis.speak(utterance);
+                audioInitialized = true;
+            }
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                setTimeout(() => {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'es-ES';
+                    utterance.rate = 0.85;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1;
+                    window.speechSynthesis.speak(utterance);
+                }, 100);
+            }
+        }
+
+        function startGame(categoryName) {
+            initializeAudio();
+            currentCategory = categoryName;
+            const categoryData = categories[categoryName];
+            
+            const isMobile = window.innerWidth < 768;
+            
+            questions = [];
+            const startPositions = [];
+            const targetPositions = [];
+            
+            for (let i = 0; i < categoryData.length; i++) {
+                let validPos = false;
+                let pos;
+                while (!validPos) {
+                    pos = {
+                        x: 0.15 + Math.random() * 0.7,
+                        y: 0.55 + Math.random() * 0.3
+                    };
+                    validPos = true;
+                    for (let p of startPositions) {
+                        const dist = Math.hypot(pos.x - p.x, pos.y - p.y);
+                        if (dist < 0.22) {
+                            validPos = false;
+                            break;
+                        }
+                    }
+                }
+                startPositions.push(pos);
+            }
+            
+            for (let i = 0; i < categoryData.length; i++) {
+                targetPositions.push({
+                    x: 0.15 + (i * 0.7 / (categoryData.length - 1)),
+                    y: isMobile ? 0.18 : 0.15
+                });
+            }
+            
+            categoryData.forEach((item, index) => {
+                questions.push({
+                    question: item.question,
+                    answer: item.answer,
+                    color: item.color,
+                    x: startPositions[index].x,
+                    y: startPositions[index].y,
+                    targetX: targetPositions[index].x,
+                    targetY: targetPositions[index].y,
+                    width: 0.18,
+                    height: 0.10,
+                    isDragging: false,
+                    isPlaced: false,
+                    draggingHandId: null
+                });
+            });
+            
+            completedCount = 0;
+            gameWon = false;
+            gameStarted = true;
+            
+            menuScreen.classList.add('hidden');
+            backBtn.classList.add('show');
+            loadingMsg.classList.add('show');
+            
+            if (!videoElement.srcObject) {
+                startCamera();
+            }
+        }
+        window.startGame = startGame;
+
+        function backToMenu() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            gameStarted = false;
+            currentCategory = null;
+            questions = [];
+            completedCount = 0;
+            gameWon = false;
+            menuScreen.classList.remove('hidden');
+            backBtn.classList.remove('show');
+            victoryScreen.classList.remove('show');
+            loadingMsg.classList.remove('show');
+        }
+        window.backToMenu = backToMenu;
+
+        function resetGame() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            if (currentCategory) {
+                victoryScreen.classList.remove('show');
+                startGame(currentCategory);
+            }
+        }
+        window.resetGame = resetGame;
+
+        function drawCard(ctx, item, x, y, isTarget = false, showAnswer = false) {
+            const px = x * canvasElement.width;
+            const py = y * canvasElement.height;
+            const w = item.width * canvasElement.width;
+            const h = item.height * canvasElement.height;
+
+            ctx.globalAlpha = isTarget ? 0.5 : 1;
+            ctx.save();
+            
+            // Fondo de la tarjeta
+            ctx.fillStyle = item.color;
+            ctx.fillRect(px - w/2, py - h/2, w, h);
+            
+            // Borde blanco grueso
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(px - w/2, py - h/2, w, h);
+            
+            // Borde interno negro para más contraste
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(px - w/2 + 4, py - h/2 + 4, w - 8, h - 8);
+            
+            // Voltear el texto para que se lea correctamente
+            ctx.scale(-1, 1);
+            
+            // Texto con sombra negra fuerte
+            ctx.font = 'bold 19px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const text = showAnswer ? item.answer : item.question;
+            const lines = wrapText(ctx, text, w * 0.85);
+            const lineHeight = 22;
+            const startY = py - ((lines.length - 1) * lineHeight) / 2;
+            
+            lines.forEach((line, i) => {
+                // Sombra negra más pronunciada
+                ctx.fillStyle = 'black';
+                ctx.lineWidth = 5;
+                ctx.strokeText(line, -px, startY + i * lineHeight);
+                ctx.fillText(line, -px + 2, startY + i * lineHeight + 2);
+                
+                // Texto blanco principal
+                ctx.fillStyle = 'white';
+                ctx.fillText(line, -px, startY + i * lineHeight);
+            });
+            
+            ctx.restore();
+            ctx.globalAlpha = 1;
+        }
+
+        function wrapText(ctx, text, maxWidth) {
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                const testLine = currentLine + ' ' + words[i];
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth) {
+                    lines.push(currentLine);
+                    currentLine = words[i];
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+
+        function checkIfInTarget(item) {
+            const dist = calculateDistance(item.x, item.y, item.targetX, item.targetY);
+            const isMobile = window.innerWidth < 768;
+            const tolerance = isMobile ? 0.15 : 0.12;
+            return dist < tolerance;
+        }
+
+        function onResults(results) {
+            if (!gameStarted) return;
+            
+            loadingMsg.classList.remove('show');
+            
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            
+            const videoAspect = results.image.width / results.image.height;
+            const canvasAspect = canvasElement.width / canvasElement.height;
+            let drawWidth = canvasElement.width;
+            let drawHeight = canvasElement.height;
+            let offsetX = 0;
+            let offsetY = 0;
+            
+            if (videoAspect > canvasAspect) {
+                drawWidth = canvasElement.height * videoAspect;
+                offsetX = (canvasElement.width - drawWidth) / 2;
+            } else {
+                drawHeight = canvasElement.width / videoAspect;
+                offsetY = (canvasElement.height - drawHeight) / 2;
+            }
+            
+            canvasCtx.drawImage(results.image, offsetX, offsetY, drawWidth, drawHeight);
+
+            for (let item of questions) {
+                if (!item.isPlaced) {
+                    drawCard(canvasCtx, item, item.targetX, item.targetY, true, true);
+                    
+                    const tx = item.targetX * canvasElement.width;
+                    const ty = item.targetY * canvasElement.height;
+                    const w = item.width * canvasElement.width;
+                    const h = item.height * canvasElement.height;
+                    
+                    canvasCtx.strokeStyle = '#FFA500';
+                    canvasCtx.lineWidth = 4;
+                    canvasCtx.setLineDash([10, 5]);
+                    canvasCtx.strokeRect(tx - w/2 - 5, ty - h/2 - 5, w + 10, h + 10);
+                    canvasCtx.setLineDash([]);
+                }
+            }
+
+            if (results.multiHandLandmarks && !gameWon) {
+                for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+                    const landmarks = results.multiHandLandmarks[i];
+                    const handId = i;
+
+                    const indexTip = landmarks[8];
+                    const thumbTip = landmarks[4];
+
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#4CAF50', lineWidth: 3});
+                    drawLandmarks(canvasCtx, landmarks, {color: '#FFA500', lineWidth: 2, radius: 5});
+
+                    const pinchDist = calculateDistance(indexTip.x, indexTip.y, thumbTip.x, thumbTip.y);
+                    const isPinching = pinchDist < 0.08;
+
+                    const cursorX = (indexTip.x + thumbTip.x) / 2;
+                    const cursorY = (indexTip.y + thumbTip.y) / 2;
+
+                    if (isPinching) {
+                        canvasCtx.beginPath();
+                        canvasCtx.moveTo(indexTip.x * canvasElement.width, indexTip.y * canvasElement.height);
+                        canvasCtx.lineTo(thumbTip.x * canvasElement.width, thumbTip.y * canvasElement.height);
+                        canvasCtx.strokeStyle = '#FFA500';
+                        canvasCtx.lineWidth = 6;
+                        canvasCtx.stroke();
+                    }
+
+                    for (let item of questions) {
+                        if (item.isPlaced) continue;
+
+                        const dist = calculateDistance(cursorX, cursorY, item.x, item.y);
+
+                        if (item.isDragging && item.draggingHandId === handId) {
+                            if (!isPinching) {
+                                item.isDragging = false;
+                                item.draggingHandId = null;
+                                
+                                if (checkIfInTarget(item)) {
+                                    item.isPlaced = true;
+                                    item.x = item.targetX;
+                                    item.y = item.targetY;
+                                    completedCount++;
+                                    
+                                    speak(`${item.question}. Respuesta correcta: ${item.answer}`);
+                                    
+                                    if (completedCount === questions.length) {
+                                        setTimeout(() => {
+                                            gameWon = true;
+                                            victoryScreen.classList.add('show');
+                                            setTimeout(() => speak('Módulo completado exitosamente.'), 3500);
+                                        }, 2500);
+                                    }
+                                }
+                            } else {
+                                item.x = cursorX;
+                                item.y = cursorY;
+                            }
+                        } else if (!item.isDragging && isPinching && dist < item.width * 0.8) {
+                            item.isDragging = true;
+                            item.draggingHandId = handId;
+                        }
+                    }
+                }
+            }
+
+            for (let item of questions) {
+                if (item.isDragging) {
+                    canvasCtx.globalAlpha = 0.4;
+                    canvasCtx.fillStyle = 'black';
+                    const px = item.x * canvasElement.width;
+                    const py = item.y * canvasElement.height;
+                    const w = item.width * canvasElement.width;
+                    const h = item.height * canvasElement.height;
+                    canvasCtx.fillRect(px - w/2 + 6, py - h/2 + 6, w, h);
+                    canvasCtx.globalAlpha = 1;
+                }
+                
+                drawCard(canvasCtx, item, item.x, item.y, false, false);
+                
+                if (item.isDragging && checkIfInTarget(item)) {
+                    const tx = item.targetX * canvasElement.width;
+                    const ty = item.targetY * canvasElement.height;
+                    const w = item.width * canvasElement.width;
+                    const h = item.height * canvasElement.height;
+                    
+                    canvasCtx.strokeStyle = '#4CAF50';
+                    canvasCtx.lineWidth = 7;
+                    canvasCtx.setLineDash([]);
+                    canvasCtx.strokeRect(tx - w/2 - 5, ty - h/2 - 5, w + 10, h + 10);
+                }
+            }
+
+            canvasCtx.font = 'bold 38px Arial';
+            canvasCtx.fillStyle = '#FFA500';
+            canvasCtx.strokeStyle = 'black';
+            canvasCtx.lineWidth = 5;
+            const counterText = `${completedCount} / ${questions.length}`;
+            canvasCtx.strokeText(counterText, 30, 50);
+            canvasCtx.fillText(counterText, 30, 50);
+
+            canvasCtx.restore();
+        }
+
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+        
+        hands.setOptions({
+            maxNumHands: 2,
+            modelComplexity: 0,
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
+        });
+        
+        hands.onResults(onResults);
+
+        async function startCamera() {
+            try {
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user',
+                        width: isMobile ? { ideal: 640 } : { ideal: 1280 },
+                        height: isMobile ? { ideal: 480 } : { ideal: 720 }
+                    }
+                });
+                videoElement.srcObject = stream;
+                videoElement.setAttribute('playsinline', '');
+                videoElement.setAttribute('webkit-playsinline', '');
+                await videoElement.play();
+
+                async function detectFrame() {
+                    if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
+                        await hands.send({ image: videoElement });
+                    }
+                    requestAnimationFrame(detectFrame);
+                }
+                detectFrame();
+            } catch (err) {
+                console.error('Error al iniciar cámara:', err);
+            }
+        }
+    </script>
+</body>
+</html>
